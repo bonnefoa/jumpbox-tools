@@ -29,3 +29,5 @@ export LESS=" -S "
 
 ip="$(myip)"
 update_tmux_window_format $(myip)
+
+PATH=~/virtual/bin:$PATH
