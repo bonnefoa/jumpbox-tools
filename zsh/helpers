@@ -85,12 +85,14 @@ jt(){
     ji $instance
 }
 
+_excluded_tags=". != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"gitlab-jumpbox-runner\" and . != \"dd-security-logging\" and . != \"canary-security-logging\" and . != \"go-perf\" and (contains(\"az-\") | not)"
+
 tags_from_ip() {
-    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Address | contains(\"$1\") ) | .ServiceTags | map(select(. != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"canary-security-logging\" and . != \"go-perf\" and (contains(\"az-\") | not) ) ) | join(\",\") "
+    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Address | contains(\"$1\") ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
 }
 
 tags_from_host() {
-    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Node | contains(\"$1\") ) | .ServiceTags | map(select(. != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"canary-security-logging\" . != \"go-perf\" and (contains(\"az-\") | not) ) ) | join(\",\") "
+    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Node | contains(\"$1\") ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
 }
 
 chosts_by_role() {
