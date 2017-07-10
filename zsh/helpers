@@ -103,6 +103,10 @@ cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
 
+cinstance_from_ip() {
+    consul-cli catalog service datadog | jq -r ".[] | select ( .Address | . == \"$1\" ) | .Node "
+}
+
 pg() {
     sudo -u postgres psql -p 5433 dogdata$(environmentlc)
 }
