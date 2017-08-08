@@ -103,6 +103,14 @@ cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
 
+chosts_by_role_classic() {
+    consul-cli catalog service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"10\") ) | .Node "
+}
+
+chosts_by_role_vpc() {
+    consul-cli catalog service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"172\") ) | .Node "
+}
+
 cinstance_from_ip() {
     consul-cli catalog service datadog | jq -r ".[] | select ( .Address | . == \"$1\" ) | .Node "
 }
