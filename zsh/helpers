@@ -99,6 +99,10 @@ chosts_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Node" | sort | uniq
 }
 
+cip_by_role_and_pshard() {
+    knife search node "role:$1 AND tags:pshard\\:$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
 cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
