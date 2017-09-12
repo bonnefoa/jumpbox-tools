@@ -3,6 +3,10 @@ if [ -f /etc/profile.d/consul.sh ]; then
     . /etc/profile.d/consul.sh
 fi
 
+if [ -f /etc/profile.d/knife-home.sh ]; then
+    . /etc/profile.d/knife-home.sh
+fi
+
 # custom tools
 PATH=~/.bin:$PATH
 
