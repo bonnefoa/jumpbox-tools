@@ -160,7 +160,7 @@ pg() {
 }
 
 rlamar() {
-    redis-cli -p 9736 
+    redis-cli -p 9736 $@
 }
 
 # Thanks @miketheman
