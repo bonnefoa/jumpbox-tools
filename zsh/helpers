@@ -99,22 +99,6 @@ chosts_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Node" | sort | uniq
 }
 
-cip_by_role_and_pshard() {
-    knife search node "role:$1 AND tags:pshard\\:$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
-}
-
-cip_by_role_and_ctxpshard() {
-    knife search node "role:$1 AND tags:master_id\\:ctx-pshard$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
-}
-
-cip_by_role_and_kafka_topic() {
-    knife search node "role:$1 AND tags:kafka_topic\\:$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
-}
-
-cip_by_role_and_kafka_topic_and_partition() {
-    knife search node "role:$1 AND tags:kafka_topic\\:$2 AND tags:kafka_partition\\:$3" -a ipaddress -F json | jq ".rows[][][] " -c -r
-}
-
 cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
@@ -131,8 +115,52 @@ cinstance_from_ip() {
     consul-cli catalog service datadog | jq -r ".[] | select ( .Address | . == \"$1\" ) | .Node "
 }
 
+cip_by_role_and_pshard() {
+    knife search node "role:$1 AND tags:pshard\\:$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
+cip_by_role_and_ctxpshard() {
+    knife search node "role:$1 AND tags:master_id\\:ctx-pshard$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
+cip_by_role_and_kafka_cluster_and_topic() {
+    knife search node "role:$1 AND tags:kafka_cluster\\:$2 AND tags:kafka_topic\\:$3" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
+cip_by_role_and_kafka_topic() {
+    knife search node "role:$1 AND tags:kafka_topic\\:$2" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
+cip_by_role_and_kafka_topic_and_partition() {
+    knife search node "role:$1 AND tags:kafka_topic\\:$2 AND tags:kafka_partition\\:$3" -a ipaddress -F json | jq ".rows[][][] " -c -r
+}
+
+chost_by_role_and_pshard() {
+    knife search node "role:$1 AND tags:pshard\\:$2" -a ipaddress -F json | jq ".rows[] | keys[] " -c -r
+}
+
+chost_by_role_and_ctxpshard() {
+    knife search node "role:$1 AND tags:master_id\\:ctx-pshard$2" -a ipaddress -F json | jq ".rows[] | keys[] " -c -r
+}
+
+chost_by_role_and_kafka_cluster_and_topic() {
+    knife search node "role:$1 AND tags:kafka_cluster\\:$2 AND tags:kafka_topic\\:$3" -a ipaddress -F json | jq ".rows[] | keys[] " -c -r
+}
+
+chost_by_role_and_kafka_topic() {
+    knife search node "role:$1 AND tags:kafka_topic\\:$2" -a ipaddress -F json | jq ".rows[] | keys[] " -c -r
+}
+
+chost_by_role_and_kafka_topic_and_partition() {
+    knife search node "role:$1 AND tags:kafka_topic\\:$2 AND tags:kafka_partition\\:$3" -a ipaddress -F json | jq ".rows[] | keys[] " -c -r
+}
+
 pg() {
     sudo -u postgres psql -p 5433 dogdata$(environmentlc)
+}
+
+rlamar() {
+    redis-cli -p 9736 
 }
 
 # Thanks @miketheman
