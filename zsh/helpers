@@ -231,7 +231,7 @@ mybrokerid() {
 }
 
 myip() {
-    ip addr show eth0 | grep -oP 'inet 1\d+.\d+.\d+.\d+' | cut -c 6-
+    ip addr show $(ifconfig | head -n1 | awk '{print $1}') | grep -oP 'inet 1\d+.\d+.\d+.\d+' | cut -c 6-
 }
 
 ff() {
