@@ -22,7 +22,7 @@ maintags(){
 }
 
 mainroles(){
-    cat /etc/update-motd.d/95-roles | awk '/Roles/{a=1;next}/Tags/{a=0}a' | grep -Ev "^$|encrypted-storage|agent-prod-to-staging|canary-security-logging|go-perf" | paste -d',' -s - 
+    cat /etc/update-motd.d/95-roles | awk '/Roles/{a=1;next}/Tags/{a=0}a' | grep -Ev "^$|encrypted-storage|agent-prod-to-staging|canary-security-logging|go-perf|dog-base|process-agent|agent6" | paste -d',' -s - 
 }
 
 refreshtools(){
@@ -85,7 +85,7 @@ jt(){
     ji $instance
 }
 
-_excluded_tags=". != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"gitlab-jumpbox-runner\" and . != \"dd-security-logging\" and . != \"canary-security-logging\" and . != \"go-perf\" and (contains(\"az-\") | not)"
+_excluded_tags=". != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"gitlab-jumpbox-runner\" and . != \"dd-security-logging\" and . != \"canary-security-logging\" and . != \"agent6\" and . != \"process-agent\" and . != \"dog-base\" and . != \"go-perf\" and (contains(\"az-\") | not)"
 
 tags_from_ip() {
     consul-cli catalog service datadog | jq -r -c ".[] | select ( .Address | . == \"$1\" ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
@@ -101,6 +101,14 @@ chosts_by_role() {
 
 cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
+}
+
+cip_postgres_by_role_and_active() {
+    consul-cli catalog service postgres --tag="${1}-${2}" | jq -r ".[].Node" | sort | uniq
+}
+
+chost_postgres_by_role_and_active() {
+    consul-cli catalog service postgres --tag="${1}-${2}" | jq -r ".[].Address" | sort | uniq
 }
 
 chosts_by_role_classic() {
