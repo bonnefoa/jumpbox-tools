@@ -31,3 +31,5 @@ ip="$(myip)"
 update_tmux_window_format $(myip)
 
 PATH=~/virtual/bin:$PATH
+PATH=~/go/bin:$PATH
+GOPATH=~/code/
