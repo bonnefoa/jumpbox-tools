@@ -29,7 +29,8 @@ starttmux() {
     local session_name="$1"
     local hosts=()
     compteur=0
-    for i in ${HOSTS}
+    LST=$(echo ${HOSTS} | sed -n 1'p' | tr ',' '\n')
+    for i in ${LST}
     do
         ((compteur++))
         if [[ "$compteur" -gt "$MAX" ]]; then
