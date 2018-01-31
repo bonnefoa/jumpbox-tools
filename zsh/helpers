@@ -103,10 +103,6 @@ cip_by_role() {
     consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
 
-cip_by_role() {
-    consul-cli catalog service datadog --tag="$1" | jq -r ".[].Node" | sort | uniq
-}
-
 cip_postgres_by_role_and_active() {
     consul-cli catalog service postgres --tag="${1}-${2}" | jq -r ".[].Node" | sort | uniq
 }
