@@ -7,6 +7,7 @@
 # config
 tmux_session_name="multi-ssh"
 MAX=20
+NEW_WINDOW=0
 
 usage() {
     echo $1
@@ -42,13 +43,21 @@ starttmux() {
     local windowname=$session_name
     tmux -u new-session -d -s "$session_name" -n "${windowname}" "ssh ${hosts[0]}"
     unset hosts[0];
+    local index=2
     for i in "${hosts[@]}"
     do
-        tmux split-window -t :"${windowname}" -h "ssh $i"
-        tmux select-layout -t :"${windowname}" tiled > /dev/null    
+        if [[ "$NEW_WINDOW" -eq 1 ]]; then
+            tmux new-window -t "${session_name}:$index" "ssh $i"
+            ((index+=1))
+        else 
+            tmux split-window -t :"${windowname}" -h "ssh $i"
+            tmux select-layout -t :"${windowname}" tiled > /dev/null    
+        fi 
     done
-    tmux select-pane -t 0
-    tmux set-window-option -t :"${windowname}"  synchronize-panes on > /dev/null
+    if [[ "$NEW_WINDOW" -eq 0 ]]; then
+        tmux select-pane -t 0
+        tmux set-window-option -t :"${windowname}"  synchronize-panes on > /dev/null
+    fi
 }
 
 checkopt() {
@@ -74,10 +83,13 @@ checkopt() {
     tmux a -dt "$tmux_session_name"
 }
 
-while getopts "u:d:r:m:h" o; do
+while getopts "u:d:r:m:hw" o; do
         case "${o}" in
         h)
         usage
+        ;;
+        w)
+        NEW_WINDOW=1
         ;;
         m)
                 MAX=${OPTARG}
