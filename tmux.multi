@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# ssh-multi : a script to ssh multiple servers over multiple tmux panes
-# nomad-fr : https://github.com/nomad-fr/scripts-systems
-# Based on D.Kovalov work : https://gist.github.com/dmytro/3984680
-
 # config
 tmux_session_name="multi-ssh"
 MAX=20
@@ -12,12 +8,20 @@ NEW_WINDOW=0
 usage() {
     echo $1
     echo
-    echo 'ssh-multi.sh : [OPTION]'
-    echo '   -d "serv0 serv1 serv2 ... servN"  : list serv to connect to'
+    echo 'tmux.multi: [OPTION]'
+    echo 'Creates a tmux session with synchronised panes across multiple server'
     echo
-    echo '   Bonus:'
-    echo '   -d "$(echo 'serv'{0..3})" : is the same as : -d "serv0 serv1 serv2 serv3"'
-    echo '   -d "$(anotherscript)" : call a script that give a list of host separated by space'
+    echo 'Options: '
+    echo '  -d <list of instances ids or ips>: List '
+    echo '  -r <role>: Role to open. Instances are sorted by instance id'
+    echo '  -m <max>: Maximum number of pane or window to open. Default is 20'
+    echo '  -w: Open window instead of pane'
+    echo
+    echo 'Examples: '
+    echo '   -d "serv0 serv1 serv2 ... servN"  : list serv to connect to'
+    echo '   -r bunk-app: Connect to the 20 first bunk-app instance ids'
+    echo '   -r bunk-app -m 6: Connect to the 6 first instance ids'
+    echo '   -r bunk-app -w: Open a tmux with a unsynchronised window per instance'
     exit 0
 }
 
@@ -35,7 +39,7 @@ starttmux() {
     do
         ((compteur++))
         if [[ "$compteur" -gt "$MAX" ]]; then
-            break 
+            break
         fi
         hosts+=("$i")
         .jumpbox-tools/deploy_tools "$i"
@@ -49,10 +53,10 @@ starttmux() {
         if [[ "$NEW_WINDOW" -eq 1 ]]; then
             tmux new-window -t "${session_name}:$index" "ssh $i"
             ((index+=1))
-        else 
+        else
             tmux split-window -t :"${windowname}" -h "ssh $i"
-            tmux select-layout -t :"${windowname}" tiled > /dev/null    
-        fi 
+            tmux select-layout -t :"${windowname}" tiled > /dev/null
+        fi
     done
     if [[ "$NEW_WINDOW" -eq 0 ]]; then
         tmux select-pane -t 0
@@ -86,20 +90,20 @@ checkopt() {
 while getopts "u:d:r:m:hw" o; do
         case "${o}" in
         h)
-        usage
-        ;;
+            usage
+            ;;
         w)
-        NEW_WINDOW=1
-        ;;
+            NEW_WINDOW=1
+            ;;
         m)
-                MAX=${OPTARG}
-                ;;
+            MAX=${OPTARG}
+            ;;
         d)
-                HOSTS=${OPTARG}
-                ;;
+            HOSTS=${OPTARG}
+            ;;
         r)
-               HOSTS=$(hosts_by_role ${OPTARG} | paste -sd " " -)
-               ;;
+            HOSTS=$(hosts_by_role ${OPTARG} | paste -sd " " -)
+            ;;
         esac
 done
 checkopt
