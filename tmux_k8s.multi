@@ -26,9 +26,14 @@ usage() {
     exit 0
 }
 
-lookup_node ()
+lookup_node_aws ()
 {
     aws-vault exec $AWS_PROFILE -- aws ec2 describe-instances --region=us-east-1 --filter "Name=tag:kubernetes_cluster,Values=$1" "Name=tag:kubernetes_role,Values=$2" --query 'Reservations[*].Instances[*].PrivateDnsName' | jq '.[][]' -r
+}
+
+lookup_node_gcp ()
+{
+    gcloud compute instances list --filter="labels.kubernetes_role=$2 AND labels.kubernetes_cluster=$1" --format="csv[no-heading](networkInterfaces[].networkIP)"
 }
 
 starttmux() {
@@ -67,7 +72,11 @@ starttmux() {
 
 checkopt() {
     if [ ! -z "$ROLE" ] && [ ! -z "$CLUSTER" ] ; then
-        HOSTS=$(lookup_node $CLUSTER $ROLE)
+        if [[ $(kubectl config view -o=jsonpath='{.current-context}') = *"eu1"* ]]; then
+            HOSTS=$(lookup_node_gcp $CLUSTER $ROLE)
+        else
+            HOSTS=$(lookup_node_aws $CLUSTER $ROLE)
+        fi
     fi
     if [ -z "$HOSTS" ] ; then
         usage "Please provide of list of hosts with -d option."
