@@ -33,7 +33,8 @@ lookup_node_aws ()
 
 lookup_node_gcp ()
 {
-    gcloud compute instances list --filter="labels.kubernetes_role=$2 AND labels.kubernetes_cluster=$1" --format="csv[no-heading](networkInterfaces[].networkIP)"
+    gcloud compute instances list --format json | jq ".[] | select( (.labels.role == \"$2\" and .labels.kubernetes_cluster==\"$1\" ) ) | .networkInterfaces[0].networkIP " -r
+    #gcloud compute instances list --filter="labels.kubernetes_role=$2 AND labels.kubernetes_cluster=$1" --format="csv[no-heading](networkInterfaces[].networkIP)"
 }
 
 starttmux() {
