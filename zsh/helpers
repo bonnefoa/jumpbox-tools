@@ -36,7 +36,7 @@ refreshtools(){
 
 instance_to_ip() {
     local instance="$1"
-    consul-cli catalog service datadog | jq -r ".[] | select ( .Node == \"$instance\" ) | .Address "
+    consul-cli health service datadog | jq -r ".[] | select ( .[].Node == \"$instance\" ) | .Address "
 }
 
 update_tmux_window_format() {
@@ -56,7 +56,7 @@ do_ssh () {
 }
 
 jr(){
-    local ip=$(consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | head -1)
+    local ip=$(consul-cli health service datadog --tag="$1" | jq -r ".[].Node.Address" | head -1)
     if [[ -z "$ip" ]]; then 
         echo "Unkown role"
         return 1
