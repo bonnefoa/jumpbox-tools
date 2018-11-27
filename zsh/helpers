@@ -88,39 +88,39 @@ jt(){
 _excluded_tags=". != \"dd-process-agent\" and . != \"agent-prod-to-staging\" and . != \"gitlab-jumpbox-runner\" and . != \"dd-security-logging\" and . != \"canary-security-logging\" and . != \"agent6\" and . != \"process-agent\" and . != \"dog-base\" and . != \"go-perf\" and (contains(\"az-\") | not)"
 
 tags_from_ip() {
-    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Address | . == \"$1\" ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
+    consul-cli health service datadog | jq -r -c ".[] | select ( .Address | . == \"$1\" ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
 }
 
 tags_from_host() {
-    consul-cli catalog service datadog | jq -r -c ".[] | select ( .Node | . == \"$1\" ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
+    consul-cli health service datadog | jq -r -c ".[] | select ( .Node | . == \"$1\" ) | .ServiceTags | map(select($_excluded_tags) ) | join(\",\") "
 }
 
 chosts_by_role() {
-    consul-cli catalog service datadog --tag="$1" | jq -r ".[].Node" | sort | uniq
+    consul-cli health service datadog --tag="$1" | jq -r ".[].Node" | sort | uniq
 }
 
 cip_by_role() {
-    consul-cli catalog service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
+    consul-cli health service datadog --tag="$1" | jq -r ".[].Address" | sort | uniq
 }
 
 cip_postgres_by_role_and_active() {
-    consul-cli catalog service postgres --tag="${1}-${2}" | jq -r ".[].Node" | sort | uniq
+    consul-cli health service postgres --tag="${1}-${2}" | jq -r ".[].Node" | sort | uniq
 }
 
 chost_postgres_by_role_and_active() {
-    consul-cli catalog service postgres --tag="${1}-${2}" | jq -r ".[].Address" | sort | uniq
+    consul-cli health service postgres --tag="${1}-${2}" | jq -r ".[].Address" | sort | uniq
 }
 
 chosts_by_role_classic() {
-    consul-cli catalog service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"10\") ) | .Node "
+    consul-cli health service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"10\") ) | .Node "
 }
 
 chosts_by_role_vpc() {
-    consul-cli catalog service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"172\") ) | .Node "
+    consul-cli health service datadog --tag="$1" | jq -r ".[] | select ( .Address | startswith(\"172\") ) | .Node "
 }
 
 cinstance_from_ip() {
-    consul-cli catalog service datadog | jq -r ".[] | select ( .Address | . == \"$1\" ) | .Node "
+    consul-cli health service datadog | jq -r ".[] | select ( .Address | . == \"$1\" ) | .Node "
 }
 
 cip_by_role_and_pshard() {
@@ -167,77 +167,44 @@ pg() {
     sudo -u postgres psql -p 5433 dogdata$(environmentlc)
 }
 
-app_to_pod () {
-    kubectl get po -n $2 -o wide | grep $1 | head -n1 | awk '{print $1}'
+rlamar() {
+    redis-cli -p 9736 $@
 }
 
-app_to_node () {
-    k get pod --all-namespaces -owide | grep $1 | head -n1 | awk '{print $8}'
+# Thanks @miketheman
+howold ()
+{
+    if [ -f /etc/created ]; then
+        created=`cat /etc/created`;
+    else
+        echo "Can't determine how old this node is, it must be very old!";
+        exit 1;
+    fi;
+    _time=$(expr `date +%s` - $created);
+    _days=`printf "scale=0;$_time / 86400\n" | bc -l`;
+    _hours=`printf "scale=0;($_time / 3600) - ($_days * 24)\n"  | bc -l `;
+    _minutes=`printf "scale=0;($_time / 60) - ($_days * 1440) - ($_hours * 60)\n" | bc -l`;
+    _seconds=`printf "scale=0;$_time %% 60\n" | bc -l`;
+    printf "This node was created: ";
+    printf "${_days:-0}-Day(s)/${_hours:-0}-Hour(s)/";
+    printf "${_minutes:-0}-Minute(s)/${_seconds:-0}-Second(s)";
+    printf " ago.\n"
 }
 
-agent_on_node () {
-    k get pod -ndatadog-system -owide -lapp=datadog-agent | grep $1 | awk '{print $1}'
+howbig() {
+    cat /etc/motd | grep Instance
 }
 
-agent_along_app () {
-    node=$(app_to_node $1)
-    agent_on_node $node
+sudog () {
+    sudo -u dog $@
 }
 
-connect_to_agent_along_app () {
-    pod=$(agent_along_app $1)
-    echo "Connecting to $pod"
-    connect_to_pod $pod
+sudogq () {
+    sudo -u dog dogq $@
 }
 
-connect_to_app () {
-    ns=$(k get pod --all-namespaces | grep $1 | head -n1 | awk '{print $1}')
-    k exec -n $ns $(app_to_pod $1 $ns)  -it -- /bin/bash
-}
-
-toolbox_to_pod () {
-    kubectl get po -n datadog -o wide -l run=$1 | awk '{print $1}' | grep $1 | head -n1
-}
-
-connect_to_toolbox () {
-    k exec $(toolbox_to_pod bonnefoa-toolbox)  -it -- /bin/bash
-}
-
-connect_to_pod () {
-    ns=$(k get pod --all-namespaces | grep $1 | head -n1 | awk '{print $1}')
-    k exec -n $ns $1 -it -- /bin/bash
-}
-
-connect_to_app_node () {
-    ssh ddeng@$(k get po -o=jsonpath='{.items[0].spec.nodeName}' -l app=$1)
-}
-
-delete_pod () {
-    k delete po -l app=$1
-}
-
-exec_on_pod () {
-    local pod=$1
-    shift 1
-    k exec $pod -it -- $@
-}
-
-spinnaker_ip () {
-    aws-vault exec build-stable-admin -- aws ec2 describe-instances --region=us-east-1 --filter "Name=tag:Name,Values=spinnaker-spinnaker" --query 'Reservations[*].Instances[*].PrivateIpAddress' | jq '.[][]' -r
-}
-
-connect_to_spinnaker () {
-    spinnaker_ip
-    ssh ddeng@$(spinnaker_ip)
-}
-
-connect_to_clouddriver () {
-    clouddriver_ip
-    ssh ddeng@$(clouddriver_ip)
-}
-
-clouddriver_ip () {
-    aws-vault exec build-stable-admin -- aws ec2 describe-instances --region=us-east-1 --filter "Name=tag:Name,Values=spinnaker-clouddriver" --query 'Reservations[*].Instances[*].PrivateDnsName' | jq '.[][]' -r
+mq () {
+    sudogq metric_query $@
 }
 
 gosource() {
@@ -250,13 +217,11 @@ goinstall() {
     cd ~
     rm -rf ~/go
     rm -f go*tar.gz
-    wget https://dl.google.com/go/go1.10.3.linux-amd64.tar.gz
-    tar zxf go1.10.3.linux-amd64.tar.gz -C ~/
+    wget https://dl.google.com/go/go1.11.2.linux-amd64.tar.gz
+    tar zxf go1.11.2.linux-amd64.tar.gz -C ~/
     rm -rf ~/code
     mkdir -p ~/code/src/github.com/DataDog
 
-    git clone git@github.com:DataDog/dd-go ~/code/src/github.com/DataDog/dd-go
-    git clone git@github.com:DataDog/raclette ~/code/src/github.com/DataDog/raclette
     gosource
 
     go get github.com/robfig/glock
