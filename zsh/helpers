@@ -36,7 +36,7 @@ refreshtools(){
 
 instance_to_ip() {
     local instance="$1"
-    consul-cli health service datadog | jq -r ".[] | select ( .[].Node == \"$instance\" ) | .Address "
+    consul-cli health service datadog | jq -r ".[] | select ( .Node.Node == \"$instance\" ) | .Node.Address"
 }
 
 update_tmux_window_format() {
